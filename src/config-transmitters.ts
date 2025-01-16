@@ -212,24 +212,8 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
         }
     }
 
-    clearAll() {
-        window.location.hash = "";
-    }
-
-    /**
-     * Parses the URL configuration from the browser URL (window.location) and
-     * optionally from the URLs of included JavaScript files. It also checks for
-     * a global `hiddenhash` attribute which can contain additional
-     * configuration options. Hash parameters have a higher priority than normal
-     * URL parameters; the browser URL has a higher priority than the URLs of
-     * included JavaScript files.
-     */
     private parseUrlConfig(what?: { withScripts?: boolean }): Config {
-
-        // collect the URLs
-        const urls: string[] = [
-            window.location.href,
-        ];
+        const urls: string[] = [window.location.href];
         if (what && what.withScripts) {
             const scriptTags = document.getElementsByTagName("script");
             for (let i = 0; i < scriptTags.length; i++) {
@@ -239,7 +223,6 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
                 }
             }
         }
-        // check for a global `hiddenhash` variable
         const hiddenhash = this.getHiddenHash();
         if (hiddenhash !== "") {
             urls.push("#" + hiddenhash);
@@ -255,10 +238,6 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
         return config;
     }
 
-    /**
-     * We check for a global `hiddenhash` attribute for additional configuration
-     * settings. This can be a string or an object with string values.
-     */
     private getHiddenHash(): string {
         const hiddenhash = (window as any).hiddenhash;
         if (isNone(hiddenhash)) {
@@ -276,30 +255,20 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
     }
 
     private getHashPart(url: string): string | null {
-        if (!url)
-            return null;
+        if (!url) return null;
         const parts = url.split("#");
-        return parts.length < 2
-            ? null
-            : parts[parts.length - 1];
+        return parts.length < 2 ? null : parts[parts.length - 1];
     }
 
     private getParameterPart(url: string): string | null {
-        if (!url)
-            return null;
+        if (!url) return null;
         let part = url;
-
-        // remove the hash part
         let parts = url.split("#");
         if (parts.length > 1) {
             part = parts[parts.length - 2];
         }
-
-        // get the parameter part
         parts = part.split("?");
-        return parts.length < 2
-            ? null
-            : parts[1];
+        return parts.length < 2 ? null : parts[1];
     }
 }
 
