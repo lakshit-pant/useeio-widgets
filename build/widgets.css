@@ -25,6 +25,14 @@ pre, code {
     font-size: 0.8em;
 }
 
+svg.MuiSvgIcon-root {
+    transform: translate(0px, 0px) rotate(45deg);
+}
+input[type="checkbox"] {
+    transform: translate(0px, 0px) rotate(45deg);
+    margin-right: 3px;
+}
+
 th.indicator>div {
     transform: translate(0px, 0px) rotate(315deg);
     width: 22px;

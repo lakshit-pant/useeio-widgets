@@ -168,13 +168,37 @@ export class SimpleConfigTransmitter extends ConfigTransmitter {
  * URL.
  */
 export class UrlConfigTransmitter extends ConfigTransmitter {
+    private initialHash: string;
+    private debug = true;
 
     constructor() {
         super();
+        this.initialHash = window.location.hash;
         this.config = this.parseUrlConfig({ withScripts: true });
-        window.onhashchange = () => this.onHashChanged();
-        window.addEventListener("popstate", () => this.onHashChanged());
-        document.addEventListener("hashChangeEvent", () => this.onHashChanged());
+        
+        // Modify hash change handlers
+        window.onhashchange = (e) => {
+            if (this.debug) {
+                console.log('Hash change:', { 
+                    from: e.oldURL,
+                    to: e.newURL,
+                    initial: this.initialHash
+                });
+            }
+            // Only handle hash changes if not a state parameter
+            if (!window.location.hash.includes('state=')) {
+                this.onHashChanged();
+            }
+        };
+    }
+
+    update(input: Config | string) {
+        // Skip updates if state parameter exists
+        if (window.location.hash.includes('state=')) {
+            return;
+        }
+        super.update(input);
+        window.location.hash = "#" + this.serialize();
     }
 
     private onHashChanged() {
@@ -188,12 +212,6 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
     clearAll() {
         window.location.hash = "";
     }
-
-    update(input: Config | string) {
-        super.update(input);
-        window.location.hash = "#" + this.serialize();
-    }
-
 
     /**
      * Parses the URL configuration from the browser URL (window.location) and

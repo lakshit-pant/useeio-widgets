@@ -6,44 +6,9 @@
     <title>Industry list</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="widgets.css">
-
-<script>
-if(typeof param=='undefined'){ var param={}; }
-param.showsearch = "true";
-document.addEventListener('hashChangeEvent', function (elem) {
-    console.log("useeio-widgets chart detects URL hashChangeEvent");
-    hashChangedUseeio();
-}, false);
-function hashChangedUseeio() {
-    model = getEpaModel();
-    // pageScript();
-}
-</script>
-
-<link type="text/css" rel="stylesheet" href="/localsite/css/base.css" id="/localsite/css/base.css" />
-<script type="text/javascript" src="/localsite/js/localsite.js?showheader=true"></script>
-
-
-<script>
-if(typeof param=='undefined'){ var param={}; }
-param.showsearch = "true";
-document.addEventListener('hashChangeEvent', function (elem) {
-    console.log("useeio-widgets chart detects URL hashChangeEvent");
-    hashChangedUseeio();
-}, false);
-function hashChangedUseeio() {
-    model = getEpaModel();
-    // pageScript();
-}
-</script>
-
-<link type="text/css" rel="stylesheet" href="/localsite/css/base.css" id="/localsite/css/base.css" />
-<script type="text/javascript" src="/localsite/js/localsite.js?showheader=true"></script>
-
 </head>
 
-<body><div class="content contentpadding">
-
+<body>
     <div class="io">
         <div style="margin: 0 auto;">
             <div class="matrix-title">Goods & Services</div><br><br>
@@ -69,12 +34,12 @@ function hashChangedUseeio() {
             selector: '.sector-list',
         });
         config.withDefaults({
-            count: 10,
+            count: 411,
         })
         config.join(sectorList);
 
     </script>
-
-</div></body>
+</body>
 
 </html>
+
