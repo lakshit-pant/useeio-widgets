@@ -174,9 +174,9 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
     constructor() {
         super();
         this.initialHash = window.location.hash;
-        this.config = this.parseUrlConfig({ withScripts: true });
+        // Remove hiddenhash check initially
+        this.config = this.parseUrlConfig({ withScripts: false });
         
-        // Modify hash change handlers
         window.onhashchange = (e) => {
             if (this.debug) {
                 console.log('Hash change:', { 
@@ -185,20 +185,40 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
                     initial: this.initialHash
                 });
             }
-            // Only handle hash changes if not a state parameter
-            if (!window.location.hash.includes('state=')) {
-                this.onHashChanged();
+            if (window.location.hash.includes('state=')) {
+                return; // Preserve state parameter
             }
+            this.onHashChanged();
         };
     }
 
+    private parseUrlConfig(what?: { withScripts?: boolean }): Config {
+        // Remove hiddenhash usage to prevent interference
+        const urls: string[] = [window.location.href];
+        
+        let config: Config = {};
+        for (const url of urls) {
+            const hashParams = parseConfig(this.getHashPart(url));
+            if (hashParams && hashParams.state) {
+                // Preserve state parameter if present
+                config.state = hashParams.state;
+            }
+            config = { ...hashParams, ...config };
+            const otherParams = parseConfig(this.getParameterPart(url));
+            config = { ...otherParams, ...config };
+        }
+        return config;
+    }
+
     update(input: Config | string) {
-        // Skip updates if state parameter exists
         if (window.location.hash.includes('state=')) {
-            return;
+            return; // Skip updates for state parameter
         }
         super.update(input);
-        window.location.hash = "#" + this.serialize();
+        // Don't update hash if state parameter exists
+        if (!window.location.hash.includes('state=')) {
+            window.location.hash = "#" + this.serialize();
+        }
     }
 
     private onHashChanged() {
@@ -210,48 +230,6 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
         for (const widget of this.widgets) {
             widget.update(config);
         }
-    }
-
-    private parseUrlConfig(what?: { withScripts?: boolean }): Config {
-        const urls: string[] = [window.location.href];
-        if (what && what.withScripts) {
-            const scriptTags = document.getElementsByTagName("script");
-            for (let i = 0; i < scriptTags.length; i++) {
-                const url = scriptTags.item(i).src;
-                if (url) {
-                    urls.push(url);
-                }
-            }
-        }
-        const hiddenhash = this.getHiddenHash();
-        if (hiddenhash !== "") {
-            urls.push("#" + hiddenhash);
-        }
-
-        let config: Config = {};
-        for (const url of urls) {
-            const hashParams = parseConfig(this.getHashPart(url));
-            config = { ...hashParams, ...config };
-            const otherParams = parseConfig(this.getParameterPart(url));
-            config = { ...otherParams, ...config };
-        }
-        return config;
-    }
-
-    private getHiddenHash(): string {
-        const hiddenhash = (window as any).hiddenhash;
-        if (isNone(hiddenhash)) {
-            return "";
-        }
-        if (typeof hiddenhash === "string") {
-            return hiddenhash;
-        }
-        if (typeof hiddenhash === "object") {
-            return Object.keys(hiddenhash)
-                .map(key => `${key}=${hiddenhash[key]}`)
-                .join("&");
-        }
-        return "";
     }
 
     private getHashPart(url: string): string | null {
