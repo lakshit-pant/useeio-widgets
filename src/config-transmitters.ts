@@ -169,56 +169,78 @@ export class SimpleConfigTransmitter extends ConfigTransmitter {
  */
 export class UrlConfigTransmitter extends ConfigTransmitter {
     private initialHash: string;
+    private stateParam: string | null;
     private debug = true;
 
     constructor() {
         super();
         this.initialHash = window.location.hash;
-        // Remove hiddenhash check initially
-        this.config = this.parseUrlConfig({ withScripts: false });
+        this.stateParam = this.extractStateParam(this.initialHash);
         
+        // Simplified config parsing
+        const config = this.parseUrlConfig({ withScripts: false });
+        if (this.stateParam) {
+            config.state = this.stateParam;
+        }
+        this.config = config;
+
+        // Modified hash change handler
         window.onhashchange = (e) => {
+            const newHash = window.location.hash;
             if (this.debug) {
                 console.log('Hash change:', { 
                     from: e.oldURL,
                     to: e.newURL,
-                    initial: this.initialHash
+                    initial: this.initialHash,
+                    stateParam: this.stateParam
                 });
             }
-            if (window.location.hash.includes('state=')) {
-                return; // Preserve state parameter
+            
+            // Preserve state parameter
+            if (this.stateParam && !newHash.includes(`state=${this.stateParam}`)) {
+                window.location.hash = newHash + 
+                    (newHash.includes('?') ? '&' : '') + 
+                    `state=${this.stateParam}`;
+                return;
             }
-            this.onHashChanged();
+            
+            if (!newHash.includes('state=')) {
+                this.onHashChanged();
+            }
         };
     }
 
-    private parseUrlConfig(what?: { withScripts?: boolean }): Config {
-        // Remove hiddenhash usage to prevent interference
-        const urls: string[] = [window.location.href];
-        
-        let config: Config = {};
-        for (const url of urls) {
-            const hashParams = parseConfig(this.getHashPart(url));
-            if (hashParams && hashParams.state) {
-                // Preserve state parameter if present
-                config.state = hashParams.state;
-            }
-            config = { ...hashParams, ...config };
-            const otherParams = parseConfig(this.getParameterPart(url));
-            config = { ...otherParams, ...config };
-        }
-        return config;
-    }
-
     update(input: Config | string) {
-        if (window.location.hash.includes('state=')) {
-            return; // Skip updates for state parameter
+        if (this.stateParam) {
+            // Always preserve state parameter during updates
+            const currentHash = window.location.hash;
+            super.update(input);
+            if (!currentHash.includes(`state=${this.stateParam}`)) {
+                window.location.hash = currentHash + 
+                    (currentHash.includes('?') ? '&' : '') + 
+                    `state=${this.stateParam}`;
+            }
+            return;
         }
         super.update(input);
-        // Don't update hash if state parameter exists
-        if (!window.location.hash.includes('state=')) {
-            window.location.hash = "#" + this.serialize();
+    }
+
+    private extractStateParam(hash: string): string | null {
+        const match = hash.match(/state=([^&]+)/);
+        return match ? match[1] : null;
+    }
+
+    private parseUrlConfig(what?: { withScripts?: boolean }): Config {
+        const urls: string[] = [window.location.href];
+        let config: Config = {};
+        
+        for (const url of urls) {
+            const hashParams = parseConfig(this.getHashPart(url));
+            const otherParams = parseConfig(this.getParameterPart(url));
+            config = { ...config, ...otherParams, ...hashParams };
         }
+        
+        return config;
     }
 
     private onHashChanged() {
