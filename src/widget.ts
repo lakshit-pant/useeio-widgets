@@ -16,6 +16,20 @@ export interface WidgetArgs {
 export abstract class Widget {
 
     private _listeners = new Array<(config: Config) => void>();
+    protected debug = true;
+    protected widgetId: string;
+    private initialState: string;
+
+    constructor() {
+        this.widgetId = Math.random().toString(36).substr(2, 9);
+        this.initialState = window.location.hash;
+        if (this.debug) {
+            console.log(`Widget ${this.widgetId} initialized:`, {
+                hash: this.initialState,
+                url: window.location.href
+            });
+        }
+    }
 
     /**
      * Updates this widget based on the given configuration options.
@@ -23,6 +37,17 @@ export abstract class Widget {
      * @param config the new configuration options of this widget.
      */
     abstract update(config: Config): Promise<void>;
+
+    protected logUpdate(config: Config) {
+        if (this.debug) {
+            console.log(`Widget ${this.widgetId} update:`, {
+                config,
+                previousHash: this.initialState,
+                currentHash: window.location.hash,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
 
     /**
      * Registers a callback function for listening to configuration changes of
@@ -36,6 +61,9 @@ export abstract class Widget {
             return;
         }
         this._listeners.push(fn);
+        if (this.debug) {
+            console.log(`Widget ${this.widgetId} listener added`);
+        }
     }
 
     /**
@@ -44,6 +72,9 @@ export abstract class Widget {
      * @param config the updated configuration
      */
     fireChange(config: Config) {
+        if (this.debug) {
+            console.log(`Widget ${this.widgetId} firing change:`, config);
+        }
         for (const fn of this._listeners) {
             fn(config);
         }

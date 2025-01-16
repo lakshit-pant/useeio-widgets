@@ -202,6 +202,9 @@ export class UrlConfigTransmitter extends ConfigTransmitter {
     }
 
     private onHashChanged() {
+        if (window.location.hash.includes('state=')) {
+            return;
+        }
         this.config = this.parseUrlConfig();
         const config = this.get(); // add possible defaults
         for (const widget of this.widgets) {
