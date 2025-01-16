@@ -169,65 +169,55 @@ export class SimpleConfigTransmitter extends ConfigTransmitter {
  */
 export class UrlConfigTransmitter extends ConfigTransmitter {
     private initialHash: string;
-    private stateParam: string | null;
+    private stateValue: string | null;
     private debug = true;
 
     constructor() {
         super();
+        // Store initial hash and state
         this.initialHash = window.location.hash;
-        this.stateParam = this.extractStateParam(this.initialHash);
-        
-        // Simplified config parsing
+        this.stateValue = this.getStateFromHash(this.initialHash);
+
+        // Initialize config without scripts to prevent overwrites
         const config = this.parseUrlConfig({ withScripts: false });
-        if (this.stateParam) {
-            config.state = this.stateParam;
+        
+        // Set initial state in config
+        if (this.stateValue) {
+            config.state = this.stateValue;
         }
+        
         this.config = config;
 
-        // Modified hash change handler
-        window.onhashchange = (e) => {
+        // Prevent hash changes from removing state
+        window.addEventListener('hashchange', (e) => {
             const newHash = window.location.hash;
-            if (this.debug) {
-                console.log('Hash change:', { 
-                    from: e.oldURL,
-                    to: e.newURL,
-                    initial: this.initialHash,
-                    stateParam: this.stateParam
-                });
+            if (!newHash.includes(`state=${this.stateValue}`)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
             }
-            
-            // Preserve state parameter
-            if (this.stateParam && !newHash.includes(`state=${this.stateParam}`)) {
-                window.location.hash = newHash + 
-                    (newHash.includes('?') ? '&' : '') + 
-                    `state=${this.stateParam}`;
-                return;
-            }
-            
-            if (!newHash.includes('state=')) {
-                this.onHashChanged();
-            }
-        };
+        }, true);
     }
 
     update(input: Config | string) {
-        if (this.stateParam) {
-            // Always preserve state parameter during updates
-            const currentHash = window.location.hash;
-            super.update(input);
-            if (!currentHash.includes(`state=${this.stateParam}`)) {
-                window.location.hash = currentHash + 
-                    (currentHash.includes('?') ? '&' : '') + 
-                    `state=${this.stateParam}`;
-            }
+        // Don't update if we have state parameter
+        if (this.stateValue) {
             return;
         }
         super.update(input);
     }
 
-    private extractStateParam(hash: string): string | null {
-        const match = hash.match(/state=([^&]+)/);
-        return match ? match[1] : null;
+    private getStateFromHash(hash: string): string | null {
+        const stateMatch = hash.match(/state=([^&#+]+)/);
+        return stateMatch ? stateMatch[1] : null;
+    }
+
+    // Prevent serialization if state exists
+    serialize(): string {
+        if (this.stateValue) {
+            return `state=${this.stateValue}`;
+        }
+        return super.serialize();
     }
 
     private parseUrlConfig(what?: { withScripts?: boolean }): Config {
